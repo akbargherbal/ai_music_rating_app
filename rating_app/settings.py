@@ -26,6 +26,7 @@ class Settings:
     audio: str = ""
     label: str = "listening"
     out: str = "./rating_out"
+    run_id: str = ""
     scorecard: str = "default"
     config: str = ""
     runs_dir: str = "runs"

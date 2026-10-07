@@ -8,12 +8,8 @@ from rating_app.cli import get_parser, parse_args
 
 
 def test_unset_options_are_dropped():
-    """Unset options are dropped so they never mask lower-precedence settings layers.
-
-    ``--out`` is the one exception today: it has a hard-coded argparse default, so it is
-    always present (see the xfail test in test_settings.py for the consequence).
-    """
-    assert parse_args([]) == {"out": "./rating_out"}
+    """Unset options are dropped so they never mask lower-precedence settings layers."""
+    assert parse_args([]) == {}
 
 
 def test_all_options_round_trip():
@@ -40,7 +36,7 @@ def test_port_must_be_int(capsys):
 
 def test_parse_args_reads_sys_argv_by_default(monkeypatch):
     monkeypatch.setattr("sys.argv", ["rating_app", "--label", "from-argv"])
-    assert parse_args() == {"label": "from-argv", "out": "./rating_out"}
+    assert parse_args() == {"label": "from-argv"}
 
 
 def test_parser_metadata():

@@ -178,15 +178,13 @@ def test_label_kept_default_without_audio():
     assert load_settings().label == "listening"
 
 
-# ------------------------------------------------------------------ known bugs (documented)
-@pytest.mark.xfail(strict=True, reason="BUG: --out has an argparse default, so it is always a "
-                   "'CLI argument' and masks RATING_OUT / config-file values (README says CLI > env).")
+# ------------------------------------------------------------------ regression guards (were strict xfails)
 def test_cli_default_for_out_must_not_mask_env(monkeypatch):
+    """--out must not carry an argparse default, or it masks RATING_OUT / config-file values."""
     monkeypatch.setenv("RATING_OUT", "/from/env")
     assert load_settings(cli_args=parse_args([])).out == "/from/env"
 
 
-@pytest.mark.xfail(strict=True, reason="BUG: Settings has no `run_id` field, so --run-id is "
-                   "silently dropped (web.create_app reads getattr(settings, 'run_id', None)).")
 def test_run_id_flag_reaches_settings():
-    assert getattr(load_settings(cli_args=parse_args(["--run-id", "r1"])), "run_id", None) == "r1"
+    """--run-id must land on Settings.run_id (web.create_app reads it for the run folder)."""
+    assert load_settings(cli_args=parse_args(["--run-id", "r1"])).run_id == "r1"

@@ -246,7 +246,7 @@ def create_app(settings: Settings) -> Flask:
     def setup():
         return render_template(
             "setup.html",
-            scorecard_library=list_scorecards(settings.scorecard_dirs),
+            scorecard_library=list_scorecards([app_path(d) for d in settings.scorecard_dirs]),
             current_scorecard=settings.scorecard,
             errors=request.args.getlist("err"),
             **get_context(),
@@ -298,7 +298,7 @@ def create_app(settings: Settings) -> Flask:
                 errors.append(str(e))
         return render_template(
             "criteria.html",
-            library=list_scorecards(settings.scorecard_dirs),
+            library=list_scorecards([app_path(d) for d in settings.scorecard_dirs]),
             loaded_id=loaded_id,
             sc_name=sc_data.get("name", "Active Scorecard"),
             json_str=json.dumps(sc_data, indent=2, ensure_ascii=False),

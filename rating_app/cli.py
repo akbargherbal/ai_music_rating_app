@@ -18,7 +18,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     ap.add_argument(
         "--out",
-        default="./rating_out",
+        default=None,
         help="Directory for legacy files (evaluations.json / criteria.json are imported from here). Results live in runs/<run_id>/.",
     )
     ap.add_argument(

@@ -1,11 +1,11 @@
 # Migration plan: test suite → pytest (≥ 90 % coverage)
 
-**Status: executed.** 293 tests pass, 4 are strict `xfail`s documenting real bugs, and total
-coverage is **100 % (line + branch)** against a **90 % hard gate**.
+**Status: executed.** 297 tests pass (none skipped/xfailed), and total coverage is
+**100 % (line + branch)** against a **90 % hard gate**.
 
 | | Before | After |
 |---|---|---|
-| Tests | 37 (4 files `unittest.TestCase`, 2 pytest-style) | 293 passed + 4 strict xfail, all pytest-style |
+| Tests | 37 (4 files `unittest.TestCase`, 2 pytest-style) | 297 passed, all pytest-style |
 | Coverage | 83 % lines; `app.py` not measured, `cli.py` 0 % | 100 % lines **and** branches, incl. `app.py` |
 | Config | none | `pyproject.toml` (pytest + coverage + gate) |
 | Isolation | read real `~/.config`, `RATING_*` env, wrote to real `scorecards/`; passed only from repo root | fully hermetic, cwd-independent, order-independent |
@@ -74,15 +74,17 @@ One test module per source module, so a failing test points straight at its owne
 * No `# pragma: no cover` and no omitted files.
 * The gate is a floor; the suite is at 100 %, so any new untested code is visible immediately.
 
-## 6. Bugs found along the way (pinned as strict `xfail`s)
+## 6. Bugs found along the way (all fixed; were strict `xfail`s)
 
 A strict `xfail` fails the build the day the bug is fixed, forcing the marker to be removed.
+All three below were fixed and their markers deleted; the tests now assert the correct
+behaviour instead of pinning the bug.
 
-| Test | Bug | Suggested fix |
+| Test | Bug | Fix applied |
 |---|---|---|
-| `test_cli_default_for_out_must_not_mask_env` | `--out` has an argparse default (`./rating_out`), so it's always a "CLI argument" and **silently overrides `RATING_OUT` and config-file values** (README promises CLI > env > file) | `default=None` in `cli.py` (the `Settings` default already is `./rating_out`) |
-| `test_run_id_flag_reaches_settings` | `Settings` has no `run_id` field, so **`--run-id` is silently dropped** (`web.create_app` reads `getattr(settings, "run_id", None)`) | add `run_id: str = ""` to `Settings` |
-| `test_scorecard_library_is_independent_of_cwd[/setup, /criteria]` | `list_scorecards(settings.scorecard_dirs)` gets raw relative dirs; the **scorecard library is empty unless cwd is the app folder** (`resolve_scorecard` correctly uses `app_path`) | `list_scorecards([app_path(d) for d in settings.scorecard_dirs])` at both call sites |
+| `test_cli_default_for_out_must_not_mask_env` | `--out` had an argparse default (`./rating_out`), so it was always a "CLI argument" and **silently overrode `RATING_OUT` and config-file values** (README promises CLI > env > file) | `default=None` in `cli.py` (the `Settings` default already is `./rating_out`) |
+| `test_run_id_flag_reaches_settings` | `Settings` had no `run_id` field, so **`--run-id` was silently dropped** (`web.create_app` reads `getattr(settings, "run_id", None)`) | added `run_id: str = ""` to `Settings` |
+| `test_scorecard_library_is_independent_of_cwd[/setup, /criteria]` | `list_scorecards(settings.scorecard_dirs)` got raw relative dirs; the **scorecard library was empty unless cwd was the app folder** (`resolve_scorecard` correctly uses `app_path`) | `list_scorecards([app_path(d) for d in settings.scorecard_dirs])` at both call sites |
 
 Also noted (not asserted): `POST /criteria` writes straight into the real `scorecards/` folder
 (now sandboxed in tests), and a blank `--label ""` is replaced by the folder name while its
@@ -118,6 +120,6 @@ jobs:
 
 ## 9. Follow-ups worth considering
 
-1. Fix the three bugs above and delete their `xfail` markers.
+1. ~~Fix the three bugs above and delete their `xfail` markers.~~ **Done** (see §6).
 2. Add `pytest-randomly` to keep order-independence honest.
 3. Browser-side `show_if` logic lives in template JS and is untested; a Playwright smoke test would cover it.

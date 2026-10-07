@@ -239,16 +239,13 @@ def test_rescan_picks_up_new_files(make_client, audio, wav, track_links):
 
 
 # ====================================================================== setup
-def test_setup_page_lists_scorecard_library(make_client, app_root, monkeypatch):
-    monkeypatch.chdir(app_root)  # see the xfail below: the library listing is cwd-relative today
+def test_setup_page_lists_scorecard_library(make_client):
     c, _ = make_client()
     page = c.get("/setup").get_data(as_text=True)
     assert "arabic_vocal" in page and "default" in page
 
 
 @pytest.mark.parametrize("url", ["/setup", "/criteria"])
-@pytest.mark.xfail(strict=True, reason="BUG: list_scorecards(settings.scorecard_dirs) is given raw relative "
-                   "paths (not app_path()), so the library is empty unless cwd is the app folder.")
 def test_scorecard_library_is_independent_of_cwd(make_client, tmp_path, monkeypatch, url):
     c, _ = make_client()
     monkeypatch.chdir(tmp_path)
@@ -438,7 +435,7 @@ def test_results_persist_across_app_restarts(make_client):
 def test_custom_run_id_attribute_is_sanitised(tmp_path, audio):
     s = load_settings(cli_args={"audio": str(audio), "out": str(tmp_path / "o"),
                                 "runs_dir": str(tmp_path / "r"), "label": "ignored"})
-    s.run_id = "my run!"  # Settings has no such field yet (see xfail in test_settings.py)
+    s.run_id = "my run!"  # explicit run id; sanitised to my_run_
     create_app(s)
     assert [p.name for p in (tmp_path / "r").iterdir()] == ["my_run_"]
 
