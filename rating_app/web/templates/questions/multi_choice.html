@@ -1,0 +1,13 @@
+<div class="question-block" data-key="{{ c.key }}">
+  <div class="q">{{ c.label }}{% if c.required %}<span style="color:var(--bad)"> *</span>{% endif %}</div>
+  {% if c.help %}<div class="help">{{ c.help }}</div>{% endif %}
+  <div class="seg">
+    {% set current_vals = rec.get(c.key) or [] %}
+    {% for o in c.options %}
+      <label>
+        <input type="checkbox" name="{{ c.key }}" value="{{ o.v }}" {% if o.v in current_vals %}checked{% endif %}>
+        <span>{{ o.t }}</span>
+      </label>
+    {% endfor %}
+  </div>
+</div>

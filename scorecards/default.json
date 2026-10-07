@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "name": "Default (Audio Evaluation)",
+  "description": "General-purpose audio listening rating scorecard",
+  "summary_metric": "overall",
+  "criteria": [
+    {
+      "key": "overall",
+      "label": "Overall quality",
+      "type": "rating",
+      "max": 5,
+      "help": "Your gut call on the whole take."
+    },
+    {
+      "key": "fidelity",
+      "label": "Audio fidelity / clarity",
+      "type": "rating",
+      "max": 5,
+      "help": "Clarity, frequency response, distortion, noise floor."
+    },
+    {
+      "key": "coherence",
+      "label": "Musicality / coherence",
+      "type": "rating",
+      "max": 5,
+      "help": "Arrangement, timing, flow, and structural coherence."
+    },
+    {
+      "key": "mix",
+      "label": "Mix balance",
+      "type": "rating",
+      "max": 5,
+      "help": "Balance, stereo placement, and dynamics."
+    },
+    {
+      "key": "artifacts",
+      "label": "Artifacts",
+      "type": "choice",
+      "options": [
+        {"v": "none", "t": "None"},
+        {"v": "minor", "t": "Minor"},
+        {"v": "major", "t": "Major"},
+        {"v": "broken", "t": "Broken / unusable"}
+      ]
+    },
+    {
+      "key": "keep",
+      "label": "Would you keep this take?",
+      "type": "choice",
+      "options": [
+        {"v": "yes", "t": "Yes"},
+        {"v": "maybe", "t": "Maybe"},
+        {"v": "no", "t": "No"}
+      ]
+    },
+    {
+      "key": "notes",
+      "label": "Notes",
+      "type": "notes",
+      "required": false,
+      "help": "Anything worth noting about this take."
+    }
+  ]
+}

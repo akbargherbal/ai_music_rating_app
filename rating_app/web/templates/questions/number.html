@@ -1,0 +1,7 @@
+<div class="question-block" data-key="{{ c.key }}">
+  <div class="q">{{ c.label }}{% if c.required %}<span style="color:var(--bad)"> *</span>{% endif %}</div>
+  {% if c.help %}<div class="help">{{ c.help }}</div>{% endif %}
+  <div style="margin-top:6px">
+    <input type="number" step="any" name="{{ c.key }}" value="{{ rec.get(c.key, '') }}">
+  </div>
+</div>

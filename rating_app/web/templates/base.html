@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title | default("rating_app") }}</title>
+  <style>
+    :root {
+      --bg: #0f1218; --fg: #e9ebef; --mut: #98a0ad; --card: #171b24;
+      --line: #28303d; --acc: #6ea8fe; --acc-hover: #5395f8;
+      --ok: #5ad19a; --warn: #e6b450; --bad: #f07070; --panel: #131720;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font: 15px/1.55 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg); color: var(--fg);
+    }
+    a { color: var(--acc); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    h1 { font-size: 22px; margin: 0.2em 0 0.5em; }
+    h2 { font-size: 18px; margin: 1.2em 0 0.4em; }
+    h3 { font-size: 16px; margin: 1em 0 0.3em; }
+    header {
+      position: sticky; top: 0; z-index: 10; background: #0b0e13;
+      border-bottom: 1px solid var(--line); padding: 10px 18px;
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    }
+    header .brand { font-weight: 700; color: #fff; font-size: 16px; }
+    header .sp { flex: 1; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 18px; }
+    .card {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 12px; padding: 20px; margin: 16px 0;
+    }
+    .muted { color: var(--mut); }
+    .small { font-size: 13px; }
+    .help { color: var(--mut); font-size: 13px; margin-top: 4px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+    a.track {
+      display: block; background: var(--card); border: 1px solid var(--line);
+      border-radius: 10px; padding: 14px; color: var(--fg);
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+    a.track:hover { border-color: var(--acc); background-color: #1c222e; text-decoration: none; }
+    a.track .arm { font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+    a.track .sub { color: var(--mut); font-size: 13px; margin-top: 4px; }
+    .chip {
+      display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 20px;
+    }
+    .chip.ok { background: #14351f; color: var(--ok); }
+    .chip.no { background: #241f16; color: var(--warn); }
+    .chip.info { background: #162438; color: var(--acc); }
+    .bar { height: 9px; border-radius: 6px; background: #232a36; overflow: hidden; margin: 8px 0 4px; }
+    .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #4d8bf0, #6ea8fe); }
+    .btn {
+      background: var(--acc); color: #07101f; border: 0; border-radius: 8px;
+      padding: 9px 16px; font-weight: 600; cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 6px; font-size: 14px;
+    }
+    .btn:hover { background: var(--acc-hover); text-decoration: none; }
+    .btn.ghost { background: transparent; color: var(--acc); border: 1px solid #3b6dbd; }
+    .btn.ghost:hover { background: rgba(110, 168, 254, 0.1); }
+    .btn.big { padding: 12px 22px; font-size: 15px; }
+    audio { width: 100%; margin: 12px 0 6px; }
+    .q { margin: 18px 0 6px; font-weight: 600; font-size: 15px; }
+    .seg { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+    .seg label {
+      border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px;
+      cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;
+      user-select: none;
+    }
+    .seg label:hover { border-color: #455268; }
+    .seg input[type="radio"], .seg input[type="checkbox"] {
+      position: absolute; opacity: 0; pointer-events: none;
+    }
+    .seg label:has(input:checked) { background: #1c2e48; border-color: var(--acc); color: #fff; }
+    input[type=number], input[type=text], select {
+      padding: 9px 12px; background: #0d1117; color: var(--fg);
+      border: 1px solid var(--line); border-radius: 8px; font-size: 14px;
+    }
+    input.wide { width: 100%; }
+    textarea {
+      width: 100%; min-height: 80px; background: #0d1117; color: var(--fg);
+      border: 1px solid var(--line); border-radius: 8px; padding: 10px; font: inherit;
+    }
+    pre {
+      background: #0b0e13; border: 1px solid var(--line); border-radius: 8px;
+      padding: 14px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+    th, td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; }
+    th { background: #141922; font-weight: 600; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    details { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin: 10px 0; }
+    details summary { cursor: pointer; font-weight: 600; color: var(--mut); }
+    details summary:hover { color: var(--fg); }
+  </style>
+</head>
+<body>
+<header>
+  <span class="brand">rating_app</span>
+  <span class="muted small">{{ label | default("listening") }} · {{ done | default(0) }}/{{ total | default(0) }} rated</span>
+  <span class="sp"></span>
+  <a class="btn ghost" href="{{ url_for('index') }}">tracks</a>
+  <a class="btn ghost" href="{{ url_for('report') }}">report</a>
+  <a class="btn ghost" href="{{ url_for('criteria_page') }}">criteria</a>
+  <a class="btn ghost" href="{{ url_for('settings_page') }}">settings</a>
+  <a class="btn ghost" href="{{ url_for('setup') }}">folder</a>
+  <a class="btn" href="{{ url_for('report_md') }}">export .md</a>
+</header>
+<div class="wrap">
+  {% block body %}{% endblock %}
+</div>
+</body>
+</html>

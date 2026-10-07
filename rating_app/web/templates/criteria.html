@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card">
+  <h1>Scorecard (Criteria)</h1>
+  <p class="muted">Active scorecard: <strong>{{ sc_name }}</strong></p>
+
+  <div class="row" style="margin-bottom:14px">
+    <label class="q" style="margin:0">Load Preset:</label>
+    <select onchange="if(this.value) window.location.href='{{ url_for('criteria_page') }}?load=' + this.value">
+      <option value="">-- Choose scorecard library --</option>
+      {% for sc in library %}
+        <option value="{{ sc.id }}" {% if loaded_id == sc.id %}selected{% endif %}>{{ sc.name }} ({{ sc.id }})</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <form method="post">
+    <div class="row" style="margin-bottom:8px">
+      <span class="q" style="margin:0">JSON Scorecard Definition</span>
+      <span class="sp" style="flex:1"></span>
+      <input type="text" name="save_as_name" value="{{ loaded_id or 'custom' }}" placeholder="scorecard name">
+      <span class="muted small">.json</span>
+    </div>
+    <textarea name="criteria_json" style="min-height:360px; font-family:ui-monospace,monospace">{{ json_str }}</textarea>
+    
+    <div class="row" style="margin-top:14px">
+      <button class="btn big" type="submit">Save to Scorecard Library</button>
+      <a class="btn ghost" href="{{ url_for('criteria_page') }}">Reset</a>
+    </div>
+  </form>
+
+  {% if errors %}
+    <div class="card" style="border-color:var(--bad)">
+      <strong style="color:var(--bad)">Validation Errors:</strong>
+      <ul>
+        {% for err in errors %}
+          <li>{{ err }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

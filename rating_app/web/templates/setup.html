@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card">
+  <h1>Track Directory &amp; Run Setup</h1>
+  <p class="muted">Set your audio folder. Sub-folders become variants/arms.</p>
+  <form method="post">
+    <div class="q">Audio Folder</div>
+    <div class="row">
+      <input class="wide" style="flex:1" type="text" id="audio-input" name="audio" value="{{ audio }}" placeholder="C:\path\to\audio">
+      <button class="btn ghost" type="button" onclick="browseFolder()">Browse Server</button>
+    </div>
+    
+    <div class="q">Run Label</div>
+    <input class="wide" type="text" name="label" value="{{ label }}" placeholder="my_evaluation_run">
+
+    <div class="q">Scorecard</div>
+    <select name="scorecard" class="wide">
+      {% for sc in scorecard_library %}
+        <option value="{{ sc.id }}" {% if current_scorecard == sc.id %}selected{% endif %}>{{ sc.name }} ({{ sc.num_criteria }} questions)</option>
+      {% endfor %}
+    </select>
+
+    <div class="row" style="margin-top:16px">
+      <button class="btn big" type="submit">Save and Load</button>
+    </div>
+  </form>
+</div>
+
+<div id="browse-modal" class="card" style="display:none; border-color:var(--acc);">
+  <div class="row">
+    <h3>Server Directory Browser</h3>
+    <span class="sp" style="flex:1"></span>
+    <button class="btn ghost small" onclick="closeBrowse()">Close</button>
+  </div>
+  <div id="browse-current" class="muted small" style="margin:6px 0"></div>
+  <div id="browse-list" style="max-height:260px; overflow-y:auto; margin:10px 0;"></div>
+  <button class="btn small" onclick="selectCurrentFolder()">Select This Folder</button>
+</div>
+
+<script>
+  let currentBrowsePath = '';
+  async function loadPath(p) {
+    const res = await fetch('/api/browse?path=' + encodeURIComponent(p || ''));
+    const data = await res.json();
+    currentBrowsePath = data.current;
+    document.getElementById('browse-current').innerText = data.current;
+    const list = document.getElementById('browse-list');
+    list.innerHTML = '';
+    if (data.parent) {
+      list.innerHTML += `<div style="padding:4px"><a href="#" onclick="loadPath('${data.parent}'); return false;">📁 .. (parent)</a></div>`;
+    }
+    data.dirs.forEach(d => {
+      list.innerHTML += `<div style="padding:4px"><a href="#" onclick="loadPath('${d.path}'); return false;">📁 ${d.name}</a></div>`;
+    });
+  }
+  function browseFolder() {
+    document.getElementById('browse-modal').style.display = 'block';
+    loadPath(document.getElementById('audio-input').value);
+  }
+  function closeBrowse() {
+    document.getElementById('browse-modal').style.display = 'none';
+  }
+  function selectCurrentFolder() {
+    document.getElementById('audio-input').value = currentBrowsePath;
+    closeBrowse();
+  }
+</script>
+{% endblock %}

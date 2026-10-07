@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block body %}
+{% if saved %}<div class="card" style="border-color:var(--ok);color:var(--ok)">✓ Evaluation saved.</div>{% endif %}
+
+{% if not total %}
+<div class="card">
+  <h1>No tracks found</h1>
+  <p class="muted">No audio files found under <code>{{ audio }}</code>.</p>
+  <a class="btn" href="{{ url_for('setup') }}">Configure folder</a>
+</div>
+{% else %}
+<div class="card">
+  <div class="row">
+    <div>
+      <h1>Rate the tracks</h1>
+      <div class="small muted">{{ done }} of {{ total }} tracks rated ({{ pct }}%)</div>
+    </div>
+    <span class="sp" style="flex:1"></span>
+    <a class="btn ghost small" href="{{ url_for('rescan') }}">↻ Rescan tracks</a>
+  </div>
+  <div class="bar"><i style="width:{{ pct }}%"></i></div>
+  <p class="help">Pick a track, listen, rate on the scorecard, and save. Progress is stored in <code>{{ run_id }}</code>.</p>
+</div>
+
+{% for glabel, gts in sections %}
+  <h2>{{ glabel or "Tracks" }}</h2>
+  <div class="grid">
+  {% for t in gts %}
+    <a class="track" href="{{ url_for('track', name=t.name) }}">
+      <div class="arm">
+        <span>{{ t.label }}</span>
+        {% if t.name in done_names %}
+          <span class="chip ok">rated</span>
+        {% else %}
+          <span class="chip no">to do</span>
+        {% endif %}
+      </div>
+      <div class="sub">{{ t.group or "root" }}</div>
+    </a>
+  {% endfor %}
+  </div>
+{% endfor %}
+{% endif %}
+{% endblock %}

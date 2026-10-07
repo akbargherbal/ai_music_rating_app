@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "name": "Arabic Vocal (Maqam)",
+  "description": "Scorecard tailored for Arabic vocal takes and maqam alignment",
+  "summary_metric": "overall",
+  "criteria": [
+    {
+      "key": "overall",
+      "label": "Overall quality",
+      "type": "rating",
+      "max": 5,
+      "help": "Your gut call on the whole take."
+    },
+    {
+      "key": "diction",
+      "label": "Vocal diction / clarity",
+      "type": "rating",
+      "max": 5,
+      "help": "Are the words clear and correctly pronounced?"
+    },
+    {
+      "key": "melody",
+      "label": "Melody / maqam fit",
+      "type": "rating",
+      "max": 5,
+      "help": "Does the melodic line sit in the intended maqam / mood?"
+    },
+    {
+      "key": "prosody",
+      "label": "Prosody / rhythm / timing",
+      "type": "rating",
+      "max": 5,
+      "help": "Phrasing, groove, breath, and timing."
+    },
+    {
+      "key": "mix",
+      "label": "Mix / audio quality",
+      "type": "rating",
+      "max": 5,
+      "help": "Balance, clarity, artifacts of the mix itself."
+    },
+    {
+      "key": "artifacts",
+      "label": "Artifacts",
+      "type": "choice",
+      "options": [
+        {"v": "none", "t": "None"},
+        {"v": "minor", "t": "Minor"},
+        {"v": "major", "t": "Major"},
+        {"v": "broken", "t": "Broken / unusable"}
+      ]
+    },
+    {
+      "key": "keep",
+      "label": "Would you keep this take?",
+      "type": "choice",
+      "options": [
+        {"v": "yes", "t": "Yes"},
+        {"v": "maybe", "t": "Maybe"},
+        {"v": "no", "t": "No"}
+      ]
+    },
+    {
+      "key": "notes",
+      "label": "Notes",
+      "type": "notes",
+      "required": false,
+      "help": "Anything worth remembering (e.g. loops at 0:40, wrong word, takes off)."
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block body %}
+{% if saved %}<div class="card" style="border-color:var(--ok);color:var(--ok)">✓ Saved.</div>{% endif %}
+
+<div class="card">
+  <div class="row">
+    <div>
+      <h1>{{ t.label }}</h1>
+      <div class="muted">{{ t.group or "root" }} · track {{ pos }}/{{ total }} · <code>{{ t.name }}</code></div>
+    </div>
+    <span class="sp" style="flex:1"></span>
+    {% if prev_name %}<a class="btn ghost" href="{{ url_for('track', name=prev_name) }}">← previous</a>{% endif %}
+    {% if next_name %}<a class="btn ghost" href="{{ url_for('track', name=next_name) }}">next →</a>{% endif %}
+  </div>
+  <audio controls preload="metadata" src="{{ url_for('audio', name=t.file) }}"></audio>
+
+  {% if t.metadata %}
+  <details style="margin-top:14px">
+    <summary>Generation settings &amp; metadata ({{ t.metadata|length }} fields)</summary>
+    <table>
+      <thead><tr><th>Field</th><th>Value</th></tr></thead>
+      <tbody>
+        {% for k, v in t.metadata.items() % project %}
+          <tr><td><code>{{ k }}</code></td><td>{{ v }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endif %}
+</div>
+
+<form method="post" class="card" id="rating-form">
+  <input type="hidden" name="next" value="{{ next_name or '' }}">
+  
+  {% for c in criteria %}
+    {% set partial_path = "questions/" ~ c.type ~ ".html" %}
+    <div class="question-wrapper" data-key="{{ c.key }}" {% if c.show_if %}data-show-if='{{ c.show_if | tojson }}'{% endif %}>
+      {% include partial_path %}
+    </div>
+  {% endfor %}
+
+  <div class="row" style="margin-top:20px">
+    <button type="submit" class="btn big">Save</button>
+    {% if next_name %}<button type="submit" class="btn big" name="advance" value="1">Save &amp; next →</button>{% endif %}
+  </div>
+</form>
+
+<script>
+  // Dynamic show_if condition evaluator
+  function checkConditions() {
+    const form = document.getElementById('rating-form');
+    document.querySelectorAll('.question-wrapper[data-show-if]').forEach(wrapper => {
+      try {
+        const cond = JSON.parse(wrapper.dataset.showIf);
+        const targetKey = cond.key;
+        const targetInput = form.querySelector(`[name="${targetKey}"]:checked`) || form.querySelector(`[name="${targetKey}"]`);
+        if (!targetInput) return;
+        
+        const val = targetInput.value;
+        let show = true;
+        
+        if (cond.eq !== undefined) show = (val == cond.eq);
+        if (cond.neq !== undefined) show = (val != cond.neq);
+        if (cond.lte !== undefined) show = (parseFloat(val) <= parseFloat(cond.lte));
+        if (cond.gte !== undefined) show = (parseFloat(val) >= parseFloat(cond.gte));
+        if (cond.lt !== undefined) show = (parseFloat(val) < parseFloat(cond.lt));
+        if (cond.gt !== undefined) show = (parseFloat(val) > parseFloat(cond.gt));
+        
+        wrapper.style.display = show ? '' : 'none';
+      } catch (e) {}
+    });
+  }
+
+  document.getElementById('rating-form').addEventListener('change', checkConditions);
+  checkConditions();
+</script>
+{% endblock %}

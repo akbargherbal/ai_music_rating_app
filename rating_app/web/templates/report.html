@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card">
+  <div class="row">
+    <h1 style="margin:0">Evaluation Report</h1>
+    <span class="sp" style="flex:1"></span>
+    <button class="btn" onclick="navigator.clipboard.writeText(document.getElementById('md').innerText).then(()=>this.textContent='Copied!')">Copy Markdown</button>
+    <a class="btn ghost" href="{{ url_for('report_md') }}">Download .md</a>
+    <a class="btn ghost" href="{{ url_for('report_csv') }}">Download .csv</a>
+    <a class="btn ghost" href="{{ url_for('report_json') }}">Download .json</a>
+  </div>
+  <pre id="md">{{ md }}</pre>
+</div>
+{% endblock %}

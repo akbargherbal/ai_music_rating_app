@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="card">
+  <h1>Effective Settings</h1>
+  <p class="muted">Layered precedence: CLI flag &gt; env var &gt; --config file &gt; &lt;audio&gt;/_rating.json &gt; user config &gt; defaults.</p>
+
+  {% if drift and drift.drifted %}
+  <div class="card" style="border-color:var(--warn); background:#201a14">
+    <strong style="color:var(--warn)">⚠ Scorecard Drift Detected!</strong>
+    <p class="small">The active scorecard has drifted from the frozen snapshot in this run.</p>
+    {% if drift.orphaned_keys %}<div class="small">Orphaned keys in snapshot: <code>{{ drift.orphaned_keys | join(", ") }}</code></div>{% endif %}
+    {% if drift.new_keys %}<div class="small">New unrated keys: <code>{{ drift.new_keys | join(", ") }}</code></div>{% endif %}
+  </div>
+  {% endif %}
+
+  <table>
+    <thead><tr><th>Setting</th><th>Effective Value</th><th>Source Origin</th></tr></thead>
+    <tbody>
+      {% for k, v in settings_dict.items() %}
+        {% if k != "sources" %}
+          <tr>
+            <td><code>{{ k }}</code></td>
+            <td><strong>{{ v }}</strong></td>
+            <td><span class="chip info">{{ sources.get(k, "default") }}</span></td>
+          </tr>
+        {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

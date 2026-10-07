@@ -1,0 +1,13 @@
+<div class="question-block" data-key="{{ c.key }}">
+  <div class="q">{{ c.label }}{% if c.required %}<span style="color:var(--bad)"> *</span>{% endif %}</div>
+  {% if c.help %}<div class="help">{{ c.help }}</div>{% endif %}
+  <div class="seg">
+    {% for i in range(1, c.max + 1) %}
+      {% set scale_text = c.scale_labels.get(i|string) if c.scale_labels else none %}
+      <label title="{{ scale_text or i }}">
+        <input type="radio" name="{{ c.key }}" value="{{ i }}" {% if rec.get(c.key)|string == i|string %}checked{% endif %}>
+        <span>{{ i }}{% if scale_text %} <span class="muted small">({{ scale_text }})</span>{% endif %}</span>
+      </label>
+    {% endfor %}
+  </div>
+</div>
