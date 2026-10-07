@@ -1,0 +1,25 @@
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["."]            # makes `import app` and `import rating_app` work from any cwd
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov",
+    "--cov-branch",               # pytest-cov 6.x does not forward `branch` from the config to subprocesses
+    "--cov-report=term-missing:skip-covered",
+    "--cov-fail-under=90",
+]
+filterwarnings = ["error"]    # any unexpected warning fails the suite
+
+[tool.coverage.run]
+source = ["rating_app", "app"]   # package + the app.py entry point
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "if TYPE_CHECKING:",
+]

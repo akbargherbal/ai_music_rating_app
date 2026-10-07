@@ -67,5 +67,11 @@ for every rating question, choice distributions, score table, notes, orphaned
 ## Tests
 ```powershell
 py -m pip install -r requirements-dev.txt
-py -m pytest
+py -m pytest                       # runs with coverage; fails if total coverage < 90%
+py -m pytest -k blind --no-cov     # quick, targeted run
+py -m pytest --cov-report=html     # browse htmlcov/index.html
 ```
+Tests are hermetic (see `tests/conftest.py`): they never read your real `~/.config`,
+never see `RATING_*` env vars, and never write into the repo's `scorecards/`, `configs/`
+or `runs/`. Coverage settings, warnings-as-errors and the 90% gate live in `pyproject.toml`.
+Design notes and the migration history: [`docs/PYTEST_MIGRATION_PLAN.md`](docs/PYTEST_MIGRATION_PLAN.md).
