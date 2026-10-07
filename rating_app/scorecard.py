@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from rating_app.paths import SCORECARD_DIR
+
 SUPPORTED_TYPES = {
     "rating",
     "choice",
@@ -130,6 +132,30 @@ def validate_scorecard(data: Any) -> list[str]:
     return errors
 
 
+def show_if_met(criterion: dict, rec: dict | None) -> bool:
+    """Server-side mirror of the browser `show_if` rule (eq/neq/lt/lte/gt/gte)."""
+    cond = criterion.get("show_if")
+    if not cond:
+        return True
+    val = (rec or {}).get(cond.get("key"))
+    if val is None or val == "":
+        return True  # controlling question unanswered: browser shows the field too
+    try:
+        num = float(val)
+    except (TypeError, ValueError):
+        num = None
+    ok = True
+    if "eq" in cond:
+        ok = ok and str(val) == str(cond["eq"])
+    if "neq" in cond:
+        ok = ok and str(val) != str(cond["neq"])
+    for op, fn in (("lt", lambda a, b: a < b), ("lte", lambda a, b: a <= b),
+                   ("gt", lambda a, b: a > b), ("gte", lambda a, b: a >= b)):
+        if op in cond:
+            ok = ok and num is not None and fn(num, float(cond[op]))
+    return ok
+
+
 def normalize_criteria(crit: list[dict]) -> list[dict]:
     """Normalize criteria list to canonical format with default values."""
     out = []
@@ -145,8 +171,11 @@ def normalize_criteria(crit: list[dict]) -> list[dict]:
 
         if c["type"] == "rating":
             c.setdefault("max", 5)
-            if "scale_labels" in c and isinstance(c["scale_labels"], dict):
-                c["scale_labels"] = {str(k): str(v) for k, v in c["scale_labels"].items()}
+            sl = c.get("scale_labels")
+            if isinstance(sl, dict):
+                c["scale_labels"] = {str(k): str(v) for k, v in sl.items()}
+            elif isinstance(sl, list):
+                c["scale_labels"] = {str(i + 1): str(v) for i, v in enumerate(sl)}
         elif c["type"] in ("choice", "multi_choice"):
             c["options"] = norm_options(c.get("options"))
         elif c["type"] == "boolean":
@@ -185,9 +214,11 @@ def load_scorecard(path_or_dict: str | Path | dict | list | None, fallback_defau
     """
     if path_or_dict is None:
         if fallback_default:
-            p = Path("scorecards/default.json")
+            p = SCORECARD_DIR / "default.json"
             if p.is_file():
                 return load_scorecard(p, fallback_default=False)
+            import warnings
+            warnings.warn(f"{p} not found; using the minimal built-in fallback scorecard.")
             return normalize_scorecard(DEFAULT_SCORECARD)
         raise ValueError("No scorecard provided.")
 

@@ -6,13 +6,13 @@
   <div class="row">
     <div>
       <h1>{{ t.label }}</h1>
-      <div class="muted">{{ t.group or "root" }} · track {{ pos }}/{{ total }} · <code>{{ t.name }}</code></div>
+      <div class="muted">{% if blind %}blind{% else %}{{ t.group or "root" }}{% endif %} · track {{ pos }}/{{ total }} {% if not blind %}· <code>{{ t.name }}</code>{% endif %}</div>
     </div>
     <span class="sp" style="flex:1"></span>
-    {% if prev_name %}<a class="btn ghost" href="{{ url_for('track', name=prev_name) }}">← previous</a>{% endif %}
-    {% if next_name %}<a class="btn ghost" href="{{ url_for('track', name=next_name) }}">next →</a>{% endif %}
+    {% if prev_id %}<a class="btn ghost" href="{{ url_for('track', tid=prev_id) }}">← previous</a>{% endif %}
+    {% if next_id %}<a class="btn ghost" href="{{ url_for('track', tid=next_id) }}">next →</a>{% endif %}
   </div>
-  <audio controls preload="metadata" src="{{ url_for('audio', name=t.file) }}"></audio>
+  <audio controls preload="metadata" src="{{ url_for('audio', tid=t.id) }}"></audio>
 
   {% if t.metadata %}
   <details style="margin-top:14px">
@@ -20,7 +20,7 @@
     <table>
       <thead><tr><th>Field</th><th>Value</th></tr></thead>
       <tbody>
-        {% for k, v in t.metadata.items() % project %}
+        {% for k, v in t.metadata.items() %}
           <tr><td><code>{{ k }}</code></td><td>{{ v }}</td></tr>
         {% endfor %}
       </tbody>
@@ -30,7 +30,7 @@
 </div>
 
 <form method="post" class="card" id="rating-form">
-  <input type="hidden" name="next" value="{{ next_name or '' }}">
+  <input type="hidden" name="next" value="{{ next_id or '' }}">
   
   {% for c in criteria %}
     {% set partial_path = "questions/" ~ c.type ~ ".html" %}
@@ -41,7 +41,7 @@
 
   <div class="row" style="margin-top:20px">
     <button type="submit" class="btn big">Save</button>
-    {% if next_name %}<button type="submit" class="btn big" name="advance" value="1">Save &amp; next →</button>{% endif %}
+    {% if next_id %}<button type="submit" class="btn big" name="advance" value="1">Save &amp; next →</button>{% endif %}
   </div>
 </form>
 

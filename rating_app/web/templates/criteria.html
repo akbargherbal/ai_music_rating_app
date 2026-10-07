@@ -20,6 +20,7 @@
       <span class="sp" style="flex:1"></span>
       <input type="text" name="save_as_name" value="{{ loaded_id or 'custom' }}" placeholder="scorecard name">
       <span class="muted small">.json</span>
+      <label class="small muted"><input type="checkbox" name="overwrite" value="1"> overwrite existing</label>
     </div>
     <textarea name="criteria_json" style="min-height:360px; font-family:ui-monospace,monospace">{{ json_str }}</textarea>
     

@@ -7,6 +7,8 @@ import random
 from pathlib import Path
 from typing import Sequence, Any
 
+from rating_app.scorecard import show_if_met
+
 DEFAULT_AUDIO_EXTS = (".wav", ".mp3", ".flac", ".m4a", ".ogg", ".opus")
 
 
@@ -112,6 +114,7 @@ def discover(
         tracks.append(
             {
                 "name": posix_rel,
+                "id": posix_rel,
                 "file": posix_rel,
                 "stem": f.stem,
                 "group": group,
@@ -121,6 +124,7 @@ def discover(
                 "raw_group": group,
                 "raw_group_label": group_label,
                 "metadata": merged_meta,
+                "raw_metadata": merged_meta,
             }
         )
 
@@ -132,9 +136,11 @@ def discover(
         rng = random.Random(blind_seed if blind_seed is not None else 42)
         rng.shuffle(tracks)
         for idx, t in enumerate(tracks, start=1):
+            t["id"] = f"b{idx:02d}"  # opaque: URLs must not reveal arm or filename
             t["label"] = f"Track {idx:02d}"
             t["group"] = "blinded"
             t["group_label"] = "Blind Evaluation"
+            t["metadata"] = {}  # generation settings would unblind the arm
 
     return tracks
 
@@ -158,6 +164,8 @@ def is_done(rec: dict[str, Any] | None, criteria: list[dict[str, Any]]) -> bool:
     if not rec:
         return False
     for c in criteria:
+        if not show_if_met(c, rec):
+            continue
         if c.get("required", True):
             val = rec.get(c["key"])
             if val is None or str(val).strip() == "":

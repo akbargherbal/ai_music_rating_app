@@ -8,6 +8,8 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any
 
+from rating_app.paths import CONFIG_DIR
+
 ENV_PREFIX = "RATING_"
 
 DEFAULT_AUDIO_EXTS = [".wav", ".mp3", ".flac", ".m4a", ".ogg", ".opus"]
@@ -125,11 +127,18 @@ def load_settings(
     if explicit_cfg:
         cfg_path = Path(explicit_cfg).expanduser()
         if not cfg_path.is_file():
-            candidate = Path("configs") / f"{explicit_cfg}.json"
+            candidate = CONFIG_DIR / f"{explicit_cfg}.json"
             if candidate.is_file():
                 cfg_path = candidate
-        if cfg_path.is_file():
-            apply_layer(_read_json_file(cfg_path), f"config file: {cfg_path}")
+        if not cfg_path.is_file():
+            raise FileNotFoundError(f"Config file not found: {explicit_cfg}")
+        try:
+            cfg_data = json.loads(cfg_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as e:
+            raise ValueError(f"Cannot read config file '{cfg_path}': {e}") from e
+        if not isinstance(cfg_data, dict):
+            raise ValueError(f"Config file '{cfg_path}' must contain a JSON object.")
+        apply_layer(cfg_data, f"config file: {cfg_path}")
 
     # 4. Environment variables RATING_*
     env_data: dict[str, Any] = {}

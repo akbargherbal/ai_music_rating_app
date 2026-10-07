@@ -58,8 +58,8 @@ def render_markdown(
         if unblind:
             return str(
                 t.get("raw_group_label")
-                or t.get("group_label")
                 or t.get("raw_group")
+                or t.get("group_label")
                 or t.get("group")
                 or ""
             )
@@ -112,6 +112,22 @@ def render_markdown(
             lines.append(
                 f"- **Metadata Columns**: {', '.join(settings.report_columns)}"
             )
+
+    crit_keys = {c["key"] for c in crit}
+    orphan_keys = sorted(
+        {
+            k
+            for rec in tracks_eval.values()
+            if isinstance(rec, dict)
+            for k in rec
+            if k != "updated" and k not in crit_keys
+        }
+    )
+    if orphan_keys:
+        lines.append(
+            "- **Orphaned answers** (questions no longer on the scorecard, kept in the raw data): "
+            + ", ".join(f"`{k}`" for k in orphan_keys)
+        )
 
     lines += ["", "## Summary by Folder / Arm", ""]
 
@@ -208,7 +224,7 @@ def render_markdown(
             row.append(str(val))
 
         for col in extra_cols:
-            val = t.get("metadata", {}).get(col, "")
+            val = (t.get("raw_metadata") or t.get("metadata") or {}).get(col, "")
             if val is None:
                 val = ""
             row.append(str(val))
@@ -305,7 +321,7 @@ def render_csv(
             row.append(str(val))
 
         for col in extra_cols:
-            val = t.get("metadata", {}).get(col, "")
+            val = (t.get("raw_metadata") or t.get("metadata") or {}).get(col, "")
             if val is None:
                 val = ""
             row.append(str(val))

@@ -110,6 +110,11 @@ class Run:
         results_data = load_json(self.results_path)
         self.tracks_data: dict[str, dict[str, Any]] = results_data.get("tracks", {})
 
+    @staticmethod
+    def peek_meta(runs_dir: str | Path, run_id: str) -> dict[str, Any]:
+        """Read an existing run's run.json without creating anything."""
+        return load_json(Path(runs_dir).expanduser().resolve() / run_id / "run.json")
+
     def save(self) -> None:
         """Persist results and metadata atomically."""
         atomic_write_json(self.run_meta_path, self.meta)

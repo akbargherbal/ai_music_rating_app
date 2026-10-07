@@ -7,6 +7,23 @@ from pathlib import Path
 from typing import Sequence
 
 
+# Folder that contains app.py (scorecards/, configs/, runs/ live here), so the
+# app behaves the same no matter which directory it is launched from.
+APP_ROOT = Path(__file__).resolve().parent.parent
+SCORECARD_DIR = APP_ROOT / "scorecards"
+CONFIG_DIR = APP_ROOT / "configs"
+
+
+def app_path(p: str | Path) -> Path:
+    """Resolve a relative path against the app folder (absolute paths unchanged)."""
+    q = Path(p).expanduser()
+    return q if q.is_absolute() else (APP_ROOT / q)
+
+
+def is_loopback_host(host: str) -> bool:
+    return (host or "127.0.0.1") in ("127.0.0.1", "localhost", "::1")
+
+
 def resolve_safe_path(path_str: str | Path) -> Path:
     """Resolve and expand a path safely."""
     p = Path(path_str).expanduser()

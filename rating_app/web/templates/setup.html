@@ -3,6 +3,12 @@
 <div class="card">
   <h1>Track Directory &amp; Run Setup</h1>
   <p class="muted">Set your audio folder. Sub-folders become variants/arms.</p>
+  {% if errors %}
+  <div class="card" style="border-color:var(--bad)">
+    <strong style="color:var(--bad)">Not applied:</strong>
+    <ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
   <form method="post">
     <div class="q">Audio Folder</div>
     <div class="row">

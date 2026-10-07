@@ -18,7 +18,11 @@ from rating_app.web import create_app, pick_free_port
 
 def main() -> int:
     cli_dict = parse_args()
-    settings = load_settings(cli_args=cli_dict)
+    try:
+        settings = load_settings(cli_args=cli_dict)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"rating_app: {e}", file=sys.stderr)
+        return 2
 
     # Prompt on interactive terminal if audio is unset
     if not settings.audio:
@@ -40,7 +44,11 @@ def main() -> int:
             f"rating_app: warning — folder not found yet: {settings.audio} (you can set it on /setup)"
         )
 
-    app = create_app(settings)
+    try:
+        app = create_app(settings)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"rating_app: {e}", file=sys.stderr)
+        return 2
 
     port = (
         settings.port

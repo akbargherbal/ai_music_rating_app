@@ -26,7 +26,7 @@
   <h2>{{ glabel or "Tracks" }}</h2>
   <div class="grid">
   {% for t in gts %}
-    <a class="track" href="{{ url_for('track', name=t.name) }}">
+    <a class="track" href="{{ url_for('track', tid=t.id) }}">
       <div class="arm">
         <span>{{ t.label }}</span>
         {% if t.name in done_names %}
@@ -35,7 +35,7 @@
           <span class="chip no">to do</span>
         {% endif %}
       </div>
-      <div class="sub">{{ t.group or "root" }}</div>
+      <div class="sub">{% if blind %}&nbsp;{% else %}{{ t.group or "root" }}{% endif %}</div>
     </a>
   {% endfor %}
   </div>

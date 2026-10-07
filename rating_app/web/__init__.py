@@ -21,7 +21,13 @@ from flask import (
 )
 
 from rating_app.discovery import discover, is_done, sections_of
-from rating_app.paths import browse_directory
+from rating_app.paths import (
+    APP_ROOT,
+    SCORECARD_DIR,
+    app_path,
+    browse_directory,
+    is_loopback_host,
+)
 from rating_app.report import render_csv, render_json, render_markdown
 from rating_app.scorecard import (
     list_scorecards,
@@ -48,61 +54,70 @@ def pick_free_port(host: str, preferred: int, scan: int = 50) -> int:
         return s.getsockname()[1]
 
 
+def _sanitize(name: str) -> str:
+    return "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in name) or "default_run"
+
+
 def create_app(settings: Settings) -> Flask:
     template_dir = Path(__file__).parent / "templates"
     app = Flask(__name__, template_folder=str(template_dir))
 
     out_dir = Path(settings.out).expanduser().resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
+    runs_dir = app_path(settings.runs_dir)
 
-    # 1. Resolve run_id
-    run_id = getattr(settings, "run_id", None) or settings.label or "default_run"
-    sanitized_run_id = "".join(
-        c if c.isalnum() or c in ("-", "_") else "_" for c in run_id
-    )
+    # ---- scorecard resolution (explicit; errors are raised, never swallowed) ----
+    def resolve_scorecard(choice: str) -> dict:
+        direct = Path(choice).expanduser()
+        if direct.is_file():
+            return load_scorecard(direct)
+        for d in [*settings.scorecard_dirs, SCORECARD_DIR]:
+            cand = app_path(d) / f"{choice}.json"
+            if cand.is_file():
+                return load_scorecard(cand)
+        raise FileNotFoundError(f"Scorecard not found: {choice}")
 
-    # 2. Check for legacy migration from evaluations.json
-    legacy_eval = out_dir / "evaluations.json"
-    run_dir = Path(settings.runs_dir).expanduser().resolve() / sanitized_run_id
-    target_results = run_dir / "results.json"
-    if legacy_eval.is_file() and not target_results.is_file():
-        migrate_legacy_evaluations(legacy_eval, target_results)
+    def initial_scorecard() -> dict:
+        # Legacy shim: only when the user did not pick a scorecard explicitly.
+        if settings.sources.get("scorecard", "default") == "default":
+            legacy = [out_dir / "criteria.json"]
+            if settings.audio:
+                legacy.append(Path(settings.audio).expanduser() / "_criteria.json")
+            for f in legacy:
+                if f.is_file():
+                    settings.sources["scorecard"] = f"legacy file: {f}"
+                    return load_scorecard(f)
+        return resolve_scorecard(settings.scorecard)
 
-    # 3. Resolve active scorecard
-    active_sc_dict = None
-    sc_choice = settings.scorecard
-    if sc_choice and Path(sc_choice).expanduser().is_file():
-        active_sc_dict = load_scorecard(Path(sc_choice).expanduser())
-    elif sc_choice:
-        candidate = Path("scorecards") / f"{sc_choice}.json"
-        if candidate.is_file():
-            active_sc_dict = load_scorecard(candidate)
-        else:
-            legacy_audio_crit = (
-                Path(settings.audio).expanduser() / "_criteria.json"
-                if settings.audio
-                else None
-            )
-            legacy_out_crit = out_dir / "criteria.json"
-            if legacy_audio_crit and legacy_audio_crit.is_file():
-                active_sc_dict = load_scorecard(legacy_audio_crit)
-            elif legacy_out_crit.is_file():
-                active_sc_dict = load_scorecard(legacy_out_crit)
+    active_sc_dict = initial_scorecard()
 
-    if not active_sc_dict:
-        active_sc_dict = load_scorecard(None, fallback_default=True)
+    # ---- runs ----
+    def pick_run_id(label: str, audio: str) -> str:
+        """One run per (label, audio folder): same label + different folder = new run."""
+        base = _sanitize(getattr(settings, "run_id", None) or label or "default_run")
+        meta = Run.peek_meta(runs_dir, base)
+        if meta and meta.get("audio") and audio and meta["audio"] != audio:
+            import hashlib
+            return f"{base}-{hashlib.sha1(audio.encode()).hexdigest()[:6]}"
+        return base
 
-    # 4. Initialize Run
-    run = Run(
-        run_id=sanitized_run_id,
-        runs_dir=settings.runs_dir,
-        audio=settings.audio,
-        label=settings.label,
-        scorecard=active_sc_dict,
-        settings_dict=settings.to_dict(),
-    )
+    def make_run() -> Run:
+        rid = pick_run_id(settings.label, settings.audio)
+        legacy_eval = out_dir / "evaluations.json"
+        target = runs_dir / rid / "results.json"
+        if legacy_eval.is_file() and not target.is_file():
+            migrate_legacy_evaluations(legacy_eval, target)
+        return Run(
+            run_id=rid,
+            runs_dir=runs_dir,
+            audio=settings.audio,
+            label=settings.label,
+            scorecard=active_sc_dict,
+            settings_dict=settings.to_dict(),
+        )
 
-    # 5. In-memory cache for discovered tracks
+    run = make_run()
+
     cached_tracks: list[dict[str, Any]] = []
 
     def refresh_tracks():
@@ -120,6 +135,12 @@ def create_app(settings: Settings) -> Flask:
 
     refresh_tracks()
 
+    def find_track(tid: str):
+        return next((t for t in cached_tracks if t["id"] == tid), None)
+
+    def results_payload() -> dict:
+        return {"tracks": run.tracks_data, "meta": run.meta}
+
     def get_context(**kwargs) -> dict[str, Any]:
         crit = active_sc_dict.get("criteria", [])
         total = len(cached_tracks)
@@ -129,19 +150,19 @@ def create_app(settings: Settings) -> Flask:
             if is_done(run.get_track_evaluation(t["name"]), crit)
         }
         done_count = len(done_names)
-        pct = int(100 * done_count / (total or 1))
         return {
             "label": settings.label,
             "audio": settings.audio,
-            "run_id": sanitized_run_id,
+            "run_id": run.run_id,
             "criteria": crit,
             "scorecard": active_sc_dict,
             "sections": sections_of(cached_tracks),
             "tracks": cached_tracks,
+            "blind": settings.blind,
             "done": done_count,
             "total": total,
             "done_names": done_names,
-            "pct": pct,
+            "pct": int(100 * done_count / (total or 1)),
             **kwargs,
         }
 
@@ -156,41 +177,34 @@ def create_app(settings: Settings) -> Flask:
         refresh_tracks()
         return redirect(url_for("index"))
 
-    @app.get("/track/<path:name>")
-    def track(name: str):
-        match = next((t for t in cached_tracks if t["name"] == name), None)
+    @app.get("/track/<path:tid>")
+    def track(tid: str):
+        match = find_track(tid)
         if not match:
             abort(404)
         idx = cached_tracks.index(match)
-        prev_name = cached_tracks[idx - 1]["name"] if idx > 0 else None
-        next_name = (
-            cached_tracks[idx + 1]["name"] if idx + 1 < len(cached_tracks) else None
-        )
-
-        rec = run.get_track_evaluation(name)
+        prev_id = cached_tracks[idx - 1]["id"] if idx > 0 else None
+        next_id = cached_tracks[idx + 1]["id"] if idx + 1 < len(cached_tracks) else None
         return render_template(
             "track.html",
             t=match,
-            rec=rec,
+            rec=run.get_track_evaluation(match["name"]),
             pos=idx + 1,
-            prev_name=prev_name,
-            next_name=next_name,
+            prev_id=prev_id,
+            next_id=next_id,
             saved=request.args.get("saved") == "1",
             **get_context(),
         )
 
-    @app.post("/track/<path:name>")
-    def save(name: str):
-        match = next((t for t in cached_tracks if t["name"] == name), None)
+    @app.post("/track/<path:tid>")
+    def save(tid: str):
+        match = find_track(tid)
         if not match:
             abort(404)
-
+        name = match["name"]
         rec = run.get_track_evaluation(name)
-        crit = active_sc_dict.get("criteria", [])
-
-        for c in crit:
-            ckey = c["key"]
-            ctype = c["type"]
+        for c in active_sc_dict.get("criteria", []):
+            ckey, ctype = c["key"], c["type"]
             if ctype == "multi_choice":
                 vals = request.form.getlist(ckey)
                 if vals:
@@ -210,196 +224,162 @@ def create_app(settings: Settings) -> Flask:
                     rec[ckey] = val.lower() == "true"
                 else:
                     rec[ckey] = val
-
         run.set_track_evaluation(name, rec)
 
-        if request.form.get("advance") == "1" and request.form.get("next"):
-            return redirect(url_for("track", name=request.form["next"]))
-        return redirect(url_for("track", name=name, saved=1))
+        nxt = request.form.get("next")
+        if request.form.get("advance") == "1" and nxt and find_track(nxt):
+            return redirect(url_for("track", tid=nxt))
+        return redirect(url_for("track", tid=tid, saved=1))
 
-    @app.get("/audio/<path:name>")
-    def audio(name: str):
-        if not settings.audio:
+    @app.get("/audio/<path:tid>")
+    def audio(tid: str):
+        match = find_track(tid)  # lookup by opaque id; never a user-supplied path
+        if not match or not settings.audio:
             abort(404)
         audio_root = Path(settings.audio).expanduser().resolve()
-        p = Path(name)
-        if p.is_absolute() or ".." in p.parts:
-            abort(404)
-        target = (audio_root / p).resolve()
+        target = (audio_root / match["file"]).resolve()
         if not target.is_file() or audio_root not in target.parents:
             abort(404)
         return send_from_directory(target.parent, target.name)
 
     @app.get("/setup")
     def setup():
-        scorecard_lib = list_scorecards(settings.scorecard_dirs)
         return render_template(
             "setup.html",
-            scorecard_library=scorecard_lib,
+            scorecard_library=list_scorecards(settings.scorecard_dirs),
             current_scorecard=settings.scorecard,
+            errors=request.args.getlist("err"),
             **get_context(),
         )
 
     @app.post("/setup")
     def setup_save():
+        nonlocal active_sc_dict, run
         new_audio = request.form.get("audio", "").strip().strip('"').strip("'")
         new_label = request.form.get("label", "").strip()
         new_sc = request.form.get("scorecard", "").strip()
 
+        errors: list[str] = []
+        new_sc_dict = None
+        if new_sc:
+            try:
+                new_sc_dict = resolve_scorecard(new_sc)
+            except (FileNotFoundError, ValueError) as e:
+                errors.append(str(e))
+        if new_audio and not Path(new_audio).expanduser().is_dir():
+            errors.append(f"Audio folder not found: {new_audio}")
+        if errors:  # nothing is applied unless everything is valid
+            return redirect(url_for("setup", err=errors))
+
+        if new_sc_dict is not None:
+            active_sc_dict = new_sc_dict
+            settings.scorecard = new_sc
+            settings.sources["scorecard"] = "web setup"
         if new_audio:
             settings.audio = new_audio
             settings.sources["audio"] = "web setup"
         if new_label:
             settings.label = new_label
             settings.sources["label"] = "web setup"
-        if new_sc:
-            settings.scorecard = new_sc
-            settings.sources["scorecard"] = "web setup"
-            nonlocal active_sc_dict
-            try:
-                candidate = Path("scorecards") / f"{new_sc}.json"
-                if candidate.is_file():
-                    active_sc_dict = load_scorecard(candidate)
-                else:
-                    active_sc_dict = load_scorecard(new_sc)
-            except Exception:
-                pass
 
+        run = make_run()  # new folder/label => its own run folder, results never mix
         refresh_tracks()
         return redirect(url_for("index"))
 
     @app.get("/criteria")
     def criteria_page():
-        scorecard_lib = list_scorecards(settings.scorecard_dirs)
         loaded_id = request.args.get("load", "")
+        errors = request.args.getlist("err")
         sc_data = active_sc_dict
-
         if loaded_id:
-            candidate = Path("scorecards") / f"{loaded_id}.json"
-            if candidate.is_file():
-                try:
-                    sc_data = load_scorecard(candidate)
-                except Exception:
-                    pass
-
+            try:
+                sc_data = resolve_scorecard(loaded_id)
+            except (FileNotFoundError, ValueError) as e:
+                errors.append(str(e))
         return render_template(
             "criteria.html",
-            library=scorecard_lib,
+            library=list_scorecards(settings.scorecard_dirs),
             loaded_id=loaded_id,
             sc_name=sc_data.get("name", "Active Scorecard"),
             json_str=json.dumps(sc_data, indent=2, ensure_ascii=False),
-            errors=request.args.getlist("err"),
+            errors=errors,
             **get_context(),
         )
 
     @app.post("/criteria")
     def criteria_save():
+        nonlocal active_sc_dict
         raw_json = request.form.get("criteria_json", "")
-        save_as_name = request.form.get("save_as_name", "").strip() or "custom"
-        save_as_name = "".join(
-            c for c in save_as_name if c.isalnum() or c in ("-", "_")
-        )
-
+        name = "".join(
+            c for c in (request.form.get("save_as_name", "").strip() or "custom")
+            if c.isalnum() or c in ("-", "_")
+        ) or "custom"
         try:
             parsed = json.loads(raw_json)
-            errors = validate_scorecard(parsed)
-            if errors:
-                return redirect(url_for("criteria_page", err=errors))
-
-            sc_dir = Path("scorecards")
-            sc_dir.mkdir(parents=True, exist_ok=True)
-            target_file = sc_dir / f"{save_as_name}.json"
-            target_file.write_text(
-                json.dumps(parsed, indent=2, ensure_ascii=False) + "\n",
-                encoding="utf-8",
-            )
-
-            nonlocal active_sc_dict
-            active_sc_dict = load_scorecard(target_file)
-            settings.scorecard = save_as_name
-            settings.sources["scorecard"] = f"saved to {target_file}"
         except json.JSONDecodeError as e:
             return redirect(url_for("criteria_page", err=[f"Invalid JSON: {e}"]))
+        errors = validate_scorecard(parsed)
+        if errors:
+            return redirect(url_for("criteria_page", err=errors))
 
+        SCORECARD_DIR.mkdir(parents=True, exist_ok=True)
+        target = SCORECARD_DIR / f"{name}.json"
+        if target.exists() and request.form.get("overwrite") != "1":
+            return redirect(url_for(
+                "criteria_page",
+                err=[f"'{name}.json' already exists. Tick 'overwrite existing' or choose another name."],
+            ))
+        target.write_text(json.dumps(parsed, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        active_sc_dict = load_scorecard(target)
+        settings.scorecard = name
+        settings.sources["scorecard"] = f"saved to {target}"
         return redirect(url_for("index"))
 
     @app.get("/settings")
     def settings_page():
-        drift = run.detect_drift(active_sc_dict)
         return render_template(
             "settings.html",
             settings_dict=settings.to_dict(),
             sources=settings.sources,
-            drift=drift,
+            drift=run.detect_drift(active_sc_dict),
             **get_context(),
+        )
+
+    def _stamp() -> str:
+        return _dt.datetime.now().strftime("%Y%m%d-%H%M")
+
+    def _md() -> str:
+        return render_markdown(
+            cached_tracks, results_payload(), active_sc_dict,
+            settings.audio or Path("."), settings.label, settings=settings,
         )
 
     @app.get("/report")
     def report():
-        md = render_markdown(
-            cached_tracks,
-            {"tracks": run.tracks_data, "meta": run.meta},
-            active_sc_dict,
-            settings.audio or Path("."),
-            settings.label,
-            settings=settings,
-        )
-        return render_template("report.html", md=md, **get_context())
+        return render_template("report.html", md=_md(), **get_context())
 
     @app.get("/report.md")
     def report_md():
-        md = render_markdown(
-            cached_tracks,
-            {"tracks": run.tracks_data, "meta": run.meta},
-            active_sc_dict,
-            settings.audio or Path("."),
-            settings.label,
-            settings=settings,
-        )
-        stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M")
-        return Response(
-            md,
-            mimetype="text/markdown",
-            headers={"Content-Disposition": f"attachment; filename=rating_{stamp}.md"},
-        )
+        return Response(_md(), mimetype="text/markdown", headers={
+            "Content-Disposition": f"attachment; filename=rating_{_stamp()}.md"})
 
     @app.get("/report.csv")
     def report_csv():
-        csv_data = render_csv(
-            cached_tracks,
-            {"tracks": run.tracks_data, "meta": run.meta},
-            active_sc_dict,
-            settings=settings,
-        )
-        stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M")
-        return Response(
-            csv_data,
-            mimetype="text/csv",
-            headers={"Content-Disposition": f"attachment; filename=rating_{stamp}.csv"},
-        )
+        data = render_csv(cached_tracks, results_payload(), active_sc_dict, settings=settings)
+        return Response(data, mimetype="text/csv", headers={
+            "Content-Disposition": f"attachment; filename=rating_{_stamp()}.csv"})
 
     @app.get("/report.json")
     def report_json():
-        json_data = render_json(
-            cached_tracks,
-            {"tracks": run.tracks_data, "meta": run.meta},
-            active_sc_dict,
-            settings=settings,
-        )
-        stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M")
-        return Response(
-            json.dumps(json_data, indent=2, ensure_ascii=False),
-            mimetype="application/json",
-            headers={
-                "Content-Disposition": f"attachment; filename=rating_{stamp}.json"
-            },
-        )
+        data = render_json(cached_tracks, results_payload(), active_sc_dict, settings=settings)
+        return Response(json.dumps(data, indent=2, ensure_ascii=False),
+                        mimetype="application/json", headers={
+            "Content-Disposition": f"attachment; filename=rating_{_stamp()}.json"})
 
     @app.get("/api/browse")
     def api_browse():
-        req_path = request.args.get("path")
-        allowed_roots = [Path.cwd()] if settings.host == "0.0.0.0" else None
-        res = browse_directory(req_path, allowed_roots=allowed_roots)
-        return jsonify(res)
+        # Off-loopback: confine browsing to the working directory tree.
+        roots = None if is_loopback_host(settings.host) else [Path.cwd()]
+        return jsonify(browse_directory(request.args.get("path"), allowed_roots=roots))
 
     return app
