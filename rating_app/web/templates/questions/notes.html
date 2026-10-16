@@ -2,6 +2,6 @@
   <div class="q">{{ c.label }}{% if c.required %}<span style="color:var(--bad)"> *</span>{% endif %}</div>
   {% if c.help %}<div class="help">{{ c.help }}</div>{% endif %}
   <div style="margin-top:6px">
-    <textarea name="{{ c.key }}" placeholder="Your notes...">{{ rec.get(c.key, '') }}</textarea>
+    <textarea name="{{ c.key }}" dir="rtl" placeholder="الملاحظات ...">{{ rec.get(c.key, '') }}</textarea>
   </div>
 </div>

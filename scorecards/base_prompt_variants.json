@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "name": "Base Prompt Variants (diction + vocal-forward)",
+  "description": "Compares base-prompt variants A/B/C on diction and vocal-forward mix",
+  "summary_metric": "vocal_clarity",
+  "criteria": [
+    {
+      "key": "diction",
+      "label": "Diction / articulation (مخارج الحروف)",
+      "type": "rating",
+      "max": 5,
+      "help": "Are consonants and word endings crisp and correctly pronounced?",
+      "scale_labels": {"1": "Slurred", "3": "Acceptable", "5": "Crystal clear"}
+    },
+    {
+      "key": "vocal_forward",
+      "label": "Vocal-forward mix (not masked)",
+      "type": "rating",
+      "max": 5,
+      "help": "Can you hear every word over guitars/strings/drums?",
+      "scale_labels": {"1": "Buried", "3": "Balanced", "5": "Clearly on top"}
+    },
+    {
+      "key": "vocal_clarity",
+      "label": "Overall vocal intelligibility",
+      "type": "rating",
+      "max": 5,
+      "help": "Gut call: how easily could you transcribe the words by ear? (drives the ranking)"
+    },
+    {
+      "key": "overall",
+      "label": "Overall quality",
+      "type": "rating",
+      "max": 5,
+      "help": "Whole-take quality, so a variant can't win by wrecking the music."
+    },
+    {
+      "key": "keep",
+      "label": "Would you keep this take?",
+      "type": "choice",
+      "options": [
+        {"v": "yes", "t": "Yes"},
+        {"v": "maybe", "t": "Maybe"},
+        {"v": "no", "t": "No"}
+      ]
+    },
+    {
+      "key": "notes",
+      "label": "Notes",
+      "type": "notes",
+      "required": false,
+      "help": "e.g. which words were unclear, reverb smear, vocal ducking"
+    }
+  ]
+}

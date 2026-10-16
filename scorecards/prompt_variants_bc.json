@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "name": "Prompt Variants B vs C (Blind)",
+  "description": "Blind A/B of prompt variants B_consonants vs C_call_response. Axis 1: melody + music. Axis 2: mix + diction. Plus a check that the backing choir actually answers the lead.",
+  "summary_metric": "overall",
+  "criteria": [
+    {
+      "key": "overall",
+      "label": "Overall quality",
+      "type": "rating",
+      "max": 5,
+      "help": "Your gut call on the whole take.",
+      "scale_labels": {"1": "Unusable", "3": "Okay", "5": "Excellent"}
+    },
+
+    {
+      "key": "melody",
+      "label": "[Melody & Music] Melody / maqam fit",
+      "type": "rating",
+      "max": 5,
+      "help": "Does the vocal line sit in the intended maqam and mood (see maqam in the run notes)? Is it memorable, not wandering?"
+    },
+    {
+      "key": "music",
+      "label": "[Melody & Music] Arrangement / instrumentation",
+      "type": "rating",
+      "max": 5,
+      "help": "Guitars, orchestral strings, drums: does the band sound cohesive, powerful and in character (symphonic rock/metal), with sensible build and structure?"
+    },
+
+    {
+      "key": "mix",
+      "label": "[Mix & Diction] Mix balance",
+      "type": "rating",
+      "max": 5,
+      "help": "Vocal forward but not detached? Band not burying the voice? Reverb tight, no mud, no harshness."
+    },
+    {
+      "key": "diction",
+      "label": "[Mix & Diction] Diction / consonant clarity",
+      "type": "rating",
+      "max": 5,
+      "help": "Can you follow the Arabic words? Consonants crisp, no slurring or swallowed syllables.",
+      "scale_labels": {"1": "Can't follow words", "3": "Mostly clear", "5": "Every word clear"}
+    },
+
+    {
+      "key": "choir",
+      "label": "Backing choir answers the lead?",
+      "type": "choice",
+      "help": "Listen for a group / choir responding after the lead line (call and response). Rate what you hear, not what you expect.",
+      "options": [
+        {"v": "none", "t": "No choir response"},
+        {"v": "faint", "t": "Faint / occasional"},
+        {"v": "clear", "t": "Clear call and response"},
+        {"v": "overwhelming", "t": "Choir overwhelms the lead"}
+      ]
+    },
+    {
+      "key": "artifacts",
+      "label": "Artifacts",
+      "type": "choice",
+      "options": [
+        {"v": "none", "t": "None"},
+        {"v": "minor", "t": "Minor"},
+        {"v": "major", "t": "Major"},
+        {"v": "broken", "t": "Broken / unusable"}
+      ]
+    },
+    {
+      "key": "keep",
+      "label": "Would you keep this take?",
+      "type": "choice",
+      "options": [
+        {"v": "yes", "t": "Yes"},
+        {"v": "maybe", "t": "Maybe"},
+        {"v": "no", "t": "No"}
+      ]
+    },
+    {
+      "key": "notes",
+      "label": "Notes",
+      "type": "notes",
+      "required": false,
+      "help": "Anything worth remembering (timestamps, wrong word, choir timing, takes off)."
+    }
+  ]
+}

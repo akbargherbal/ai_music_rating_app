@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "name": "D-test — Arabic diction (donor vs v2, AR/NAR split)",
+  "description": "Pronunciation-first blinded listening test. Question: does the qahh Quran donor (quran_ahh_r32, alpha=0.1) improve Arabic diction vs v2-only, and does the AR branch bleed recitation (tajweed) prosody while NAR adds articulation? Judge ONLY pronunciation in the primary block; melody/mood are controls and must not drive the call. summary_metric = diction.",
+  "summary_metric": "diction",
+  "criteria": [
+    {
+      "key": "diction",
+      "label": "Diction / makhraj correctness",
+      "type": "rating",
+      "max": 5,
+      "scale_labels": {
+        "1": "most words wrong",
+        "2": "many clear errors",
+        "3": "several errors",
+        "4": "minor errors only",
+        "5": "native-clean — heard no phoneme error"
+      },
+      "required": true,
+      "help": "Judge ONLY Arabic pronunciation: makhraj, harakat, letter identity. Ignore melody, mix and mood. Reserve 5 for a take with no error."
+    },
+    {
+      "key": "intelligibility",
+      "label": "Word intelligibility",
+      "type": "rating",
+      "max": 5,
+      "scale_labels": {
+        "1": "could not follow the words",
+        "3": "followed with effort",
+        "5": "every word clear on first listen"
+      },
+      "required": true,
+      "help": "Could a native listener transcribe the words without replaying?"
+    },
+    {
+      "key": "errors_count",
+      "label": "Clearly-wrong sounds (count)",
+      "type": "number",
+      "required": true,
+      "help": "Count each clearly wrong letter / haraka ONCE across the whole take. 0 is rare — count honestly; this is the errors-per-take input for errors/100-words."
+    },
+    {
+      "key": "bad_sounds",
+      "label": "Which sounds were wrong?",
+      "type": "multi_choice",
+      "options": [
+        {"v": "emphatic", "t": "Emphatic / mufakham — ط ض ظ ص"},
+        {"v": "qaf_ghayn", "t": "ق / غ"},
+        {"v": "ayn_hamza", "t": "ع / ء (hamza)"},
+        {"v": "hha", "t": "ح / ه"},
+        {"v": "madd", "t": "Vowel length / madd"},
+        {"v": "shadda", "t": "Gemination / shadda"},
+        {"v": "tanwin", "t": "Tanwin / nun endings"},
+        {"v": "other", "t": "Other (say in notes)"},
+        {"v": "none", "t": "None — clean diction"}
+      ],
+      "help": "Tick every class you heard wrong. Tick 'None' only if diction was clean."
+    },
+    {
+      "key": "tajweed_bleed",
+      "label": "Recitation (tajweed) prosody bleeding into the singing?",
+      "type": "choice",
+      "options": [
+        {"v": "no", "t": "No"},
+        {"v": "yes", "t": "Yes"}
+      ],
+      "required": true,
+      "help": "Does qira'ah prosody (madd stretching, idgham/ikhfa, iqlab, qalqalah, waqf pauses) leak into the vocal?"
+    },
+    {
+      "key": "tajweed_types",
+      "label": "Which tajweed features leaked?",
+      "type": "multi_choice",
+      "show_if": {"key": "tajweed_bleed", "eq": "yes"},
+      "options": [
+        {"v": "madd", "t": "Madd (over-long vowels)"},
+        {"v": "idgham", "t": "Idgham / ikhfa"},
+        {"v": "iqlab", "t": "Iqlab"},
+        {"v": "qalqalah", "t": "Qalqalah"},
+        {"v": "waqf", "t": "Waqf / recitation pauses"},
+        {"v": "tarteel", "t": "Overall tarteel cadence"}
+      ],
+      "help": "Shown only when the flag above is Yes."
+    },
+    {
+      "key": "cadence",
+      "label": "Singing vs recitation cadence",
+      "type": "rating",
+      "max": 5,
+      "scale_labels": {
+        "1": "pure singing",
+        "3": "some recitation feel",
+        "5": "sounds like recitation"
+      },
+      "required": true,
+      "help": "How far does it drift from singing into cantillation / tarteel? (AR-branch overcorrection signal.)"
+    },
+    {
+      "key": "articulation",
+      "label": "Articulation crispness",
+      "type": "rating",
+      "max": 5,
+      "scale_labels": {
+        "1": "mushy / smeared",
+        "5": "crisp consonants"
+      },
+      "required": true,
+      "help": "Consonant closure and clarity — independent of whether the sound is the CORRECT one. (NAR-branch signal.)"
+    },
+    {
+      "key": "mood",
+      "label": "Melody / mood (control)",
+      "type": "rating",
+      "max": 5,
+      "required": true,
+      "help": "Musical fit only. CONTROL field — expect this roughly unchanged across arms; do not let it drive the pronunciation verdict."
+    },
+    {
+      "key": "artifacts",
+      "label": "Artifacts",
+      "type": "choice",
+      "options": [
+        {"v": "none", "t": "None"},
+        {"v": "minor", "t": "Minor"},
+        {"v": "major", "t": "Major"},
+        {"v": "broken", "t": "Broken / unusable"}
+      ],
+      "required": true
+    },
+    {
+      "key": "keep",
+      "label": "Keep this take — on pronunciation alone?",
+      "type": "choice",
+      "options": [
+        {"v": "yes", "t": "Yes"},
+        {"v": "maybe", "t": "Maybe"},
+        {"v": "no", "t": "No"}
+      ],
+      "required": true
+    },
+    {
+      "key": "notes",
+      "label": "Notes",
+      "type": "notes",
+      "required": false,
+      "help": "Quote the exact mispronounced word + timecode where you can."
+    }
+  ]
+}
